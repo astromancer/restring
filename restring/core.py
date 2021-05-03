@@ -1,3 +1,4 @@
+
 import itertools as itt
 import re
 import ast
@@ -6,7 +7,7 @@ import logging
 
 from flynt.transform.transform import transform_chunk as fstring_transform
 
-from recipes.io import iter_lines, write_replace
+from recipes.io import iter_lines, write_replace, backed_up
 from recipes.op import prepend, append
 from recipes.logging import get_module_logger
 # from recipes
@@ -35,7 +36,7 @@ RGX_PYSTRING = re.compile(
 #         [diouxXeEfFgGcrsa%] # conversion type.
 #         ''')
 
-RGX_TRAILSPACE = re.compile(r'\s+\n')
+RGX_TRAILSPACE = re.compile(r'[ \t]+\n')
 
 
 def get_strings(lines):
@@ -137,8 +138,9 @@ def get_code_block(filename, line_nr, pre=10, post=10, condition=always_true):
     lines, string_matches = zip(*(*strings0, *strings1))
     lines = list(lines)
     if not lines:
-        raise ValueError(f'Could not find any strings in {filename} at line {line_nr}')
-    
+        raise ValueError(
+            f'Could not find any strings in {filename} at line {line_nr}')
+
     pre = head[:-len(strings0)]
     post = tail[len(strings1):]
     return *find_block(pre, lines, post, condition), string_matches
@@ -212,13 +214,22 @@ def rewrap(filename, line_nr, width=80, expandtabs=True):
 
 
 def strip_trailing_space(filename, ignored_=()):
-    with open(filename, 'r+') as fp:
-        line = fp.readline()
-        mo = RGX_TRAILSPACE.search(line)
-        if mo:
-            fp.write(RGX_TRAILSPACE.sub('\n', line))
+    # this implementation only rewrites the file if necessary and only rewrites
+    # the portion of the file that is necessary, so is somewhat optimized
+    # compared to blind search and write
+    with open(filename, 'r+') as file:
+        while True:
+            pos = file.tell()
+            line = file.readline()
+            mo = RGX_TRAILSPACE.search(line)
+            if mo:
+                # remaining content to be rewriten
+                content = line + file.read()
 
-    # write_replace(filename, {string: RGX_TRAILSPACE.sub('\n', string)})
+                file.seek(pos)
+                file.write(RGX_TRAILSPACE.sub('\n', content))
+                file.truncate()
+                break
 
 
 class GetMod(ast.NodeVisitor):
@@ -251,7 +262,7 @@ def _convert_fstring(block, string=None, quote=None, width=80, expandtabs=True):
     modstring = ast.get_source_segment(block, mod.right)
 
     # return f'{string.unwrapped!r} % {modstring}'
-    
+
     quote = quote or string.quote
     # FIXME: this function is frekkin useless!
     new, changed = fstring_transform(
