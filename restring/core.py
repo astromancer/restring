@@ -39,14 +39,14 @@ RGX_PYSTRING = re.compile(
 RGX_TRAILSPACE = re.compile(r'[ \t]+\n')
 
 
-def get_strings(lines):
-    first = True
+def get_strings(lines, first=True):
     for line in lines:
         match = RGX_PYSTRING.search(line)
         if match:
             yield line, match
             first = False
         elif not first:
+            # exit the loop if string is not continued to next line
             break
 
 
@@ -120,8 +120,9 @@ def _read_around(filename, line_nr, pre=10, post=10):
 
 def get_string_block(filename, line_nr, pre=10, post=10):
     head, tail = _read_around(filename, line_nr, pre, post)
-    yield from reversed(list(get_strings(head[::-1])))
-    yield from get_strings(tail)
+    strings = list(get_strings(head[::-1]))[::-1]
+    yield from strings
+    yield from get_strings(tail, not bool(strings))
 
 
 def always_true(_):
@@ -138,7 +139,8 @@ def get_code_block(filename, line_nr, pre=10, post=10, condition=always_true):
     lines = list(lines)
     if not lines:
         raise ValueError(
-            f'Could not find any strings in {filename} at line {line_nr}')
+            f'Could not find any strings in {filename} at line {line_nr}'
+        )
 
     pre = head[:-len(strings0)]
     post = tail[len(strings1):]
@@ -174,7 +176,7 @@ def _first_parsable_block(lines, join, initial=''):
             pass
 
 
-def wrap(string, width=80, marks='', quote="'", indents=('', ''), 
+def wrap(string, width=80, marks='', quote="'", indents=('', ''),
          expandtabs=True):
 
     # add indent space for quotes
@@ -216,7 +218,7 @@ def rewrap(filename, line_nr, width=80, expandtabs=True):
 def strip_trailing_space(filename, _ignored=()):
     """
     Strip trailing whitespace from file.
-    
+
     This implementation only rewrites the file if necessary and only rewrites
     the portion of the file that is necessary, so is somewhat optimized
     compared to blind replace and rewrite.
