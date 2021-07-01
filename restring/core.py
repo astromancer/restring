@@ -20,11 +20,11 @@ logger.setLevel(logging.INFO)
 
 RGX_PYSTRING = re.compile(
     r'''(?xs)
-        (?P<indent>\s*)                           # indent
-        (?P<marks>r?f?)                      # string type indicator
-        (?P<quote>(['"]){1}(?:\4{2})?)     # quote characters
-        (?P<content>.*?)                # string contents
-        \3                              # closing quote
+        (?P<indent>\s*)                     # indent
+        (?P<marks>r?f?)                     # string type indicator
+        (?P<quote>(['"]){1}(?:\4{2})?)      # quote characters
+        (?P<content>.*?)                    # string contents
+        \3                                  # closing quote
     ''')
 # RGX_PRINTF_STR = re.compile(
 #     r'''(?x)
@@ -100,7 +100,6 @@ class String:
                     self.indents[:2], expandtabs)
 
     def wrap_in_file(self, filename, width, expandtabs):
-
         new = self.wrap(width, expandtabs)
         if self.raw != new:
             # TODO: do you need to rewrite entire file for single line changes?
@@ -175,7 +174,8 @@ def _first_parsable_block(lines, join, initial=''):
             pass
 
 
-def wrap(string, width=80, marks='', quote="'", indents=('', ''), expandtabs=True):
+def wrap(string, width=80, marks='', quote="'", indents=('', ''), 
+         expandtabs=True):
 
     # add indent space for quotes
     nquote = len(quote)
@@ -213,10 +213,14 @@ def rewrap(filename, line_nr, width=80, expandtabs=True):
     String.from_matches(matches).wrap_in_file(filename, width, expandtabs)
 
 
-def strip_trailing_space(filename, ignored_=()):
-    # this implementation only rewrites the file if necessary and only rewrites
-    # the portion of the file that is necessary, so is somewhat optimized
-    # compared to blind search and write
+def strip_trailing_space(filename, _ignored=()):
+    """
+    Strip trailing whitespace from file.
+    
+    This implementation only rewrites the file if necessary and only rewrites
+    the portion of the file that is necessary, so is somewhat optimized
+    compared to blind replace and rewrite.
+    """
     with open(filename, 'r+') as file:
         while True:
             pos = file.tell()

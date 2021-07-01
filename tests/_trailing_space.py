@@ -1,5 +1,7 @@
+# pylint: disable=all
 
-@contextmanager
+                                                                          
+@contextmanager   
 def backed_up(filename, mode='w', backupfile=None, exception_hook=None):
     """
     Context manager for doing file operations under backup. This will backup
@@ -11,38 +13,38 @@ def backed_up(filename, mode='w', backupfile=None, exception_hook=None):
     ----------
     filename : str or Path
         The file to be edited.
-    mode : str, optional
+    mode : str, optional   
         File mode for opening, by default 'w'.
-    backupfile : str or Path, optional
+    backupfile : str or Path, optional   
         Location of the backup file, by default None. The default location will
         is the temporary file created by `tempfile.mkstemp`, using the prefix
-        "backup." and suffix being the original `filename`.
-    exception_hook : callable, optional
+        "backup." and suffix being the original `filename`. 
+    exception_hook : callable, optional  
         Hook to run on the event of an exception if you wish to modify the
         error message. The default, None, will leave the exception unaltered.
-
-    Examples
-    --------
+      
+    Examples 
+    -------- 
     >>> Path('foo.txt').write_text('Important stuff')
-    ... with safe_write('foo.txt') as fp:
+    ... with safe_write('foo.txt') as fp:  
     ...     fp.write('Some additional text')
-    ...     raise Exception('Catastrophy!')
+    ...     raise Exception('Catastrophy!')           
     ... Path('foo.txt').read_text()
     'Important stuff' # original content was restored. Catastrophy averted!
 
-    Raises
+    Raises   
     ------
     Exception
         The type and message of exceptions raised by this context manager are
         determined by the optional `exception_hook` function.
     """
     # write formatted entries
-    # backup and restore on error!
+    # backup and restore on error!    
     path = Path(filename).resolve()
     backup_needed = path.exists()
     if backup_needed:
         if backupfile is None:
-            bid, backupfile = tempfile.mkstemp(prefix='backup.',
+            bid, backupfile = tempfile.mkstemp(prefix='backup.',          
                                                suffix=f'.{path.name}')
         else:
             backupfile = Path(backupfile)
@@ -52,13 +54,14 @@ def backed_up(filename, mode='w', backupfile=None, exception_hook=None):
 
     # write formatted entries
     with path.open(mode) as fp:
-        try:
+        try:     
             yield fp
-        except Exception as err:
-            if backup_needed:
+        except Exception as err: 
+            if backup_needed: 
                 fp.close()
-                os.close(bid)
+                os.close(bid)  
                 shutil.copy(backupfile, filename)
-            if exception_hook:
-                raise exception_hook(err, filename) from err
-            raise
+            if exception_hook:  
+                raise exception_hook(err, filename) from err   
+            raise                                                              
+                 

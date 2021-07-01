@@ -1,6 +1,6 @@
 
 
-class _Test1
+class _Test1:
     def _arithmetic(self, other, op):
         #
         if isinstance(other, TimeSeries):

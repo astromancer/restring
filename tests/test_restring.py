@@ -1,10 +1,25 @@
-import shutil, tempfile
-from recipes.testing import expected, mock
-from recipes.string.restring import (RGX_PYSTRING, RGX_PRINTF_STR,
-                                     _convert_fstring, strip_trailing_space)
 
-import pytest
+# std libs
+import shutil
+import tempfile
+from pathlib import Path
 
+# local libs
+from recipes.testing import expected
+from restring.core import String, _convert_fstring, strip_trailing_space
+
+
+def code_blocks():
+    # testpath = Path(__file__).parent
+    testpath = Path('/home/hannes/work/restring/tests/')
+    file = testpath / '_rewrap_examples.py'
+    text = file.read_text()
+    return text.split(f'# {"-"*76} #')
+
+
+def test_string_detect(block):
+    string = String.parse(block)
+    string.raw
 
 # @pytest.mark.parametrize('s',
 #                          {'%  s',
@@ -126,7 +141,6 @@ import pytest
 def test_convert_fstring():
     _convert_fstring('refactor_examples_pre.py', 8)
 
-from pathlib import Path
 
 def test_strip_trailing_spaces():
     fd, name = tempfile.mkstemp()
