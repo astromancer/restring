@@ -1,31 +1,29 @@
 
-import itertools as itt
+# std
 import re
 import ast
 import contextlib
 import textwrap as txw
-import logging
+import itertools as itt
 
 # third-party
 from loguru import logger
 from flynt.transform.transform import transform_chunk as fstring_transform
 
-from recipes.io import iter_lines, write_replace, backed_up
-from recipes.op import prepend, append
-from recipes.logging import get_module_logger
-# from recipes
+# local
+from recipes.io import iter_lines, write_replace
+
 
 # ---------------------------------------------------------------------------- #
 WIDTH = 100
 
-
-RGX_PYSTRING = re.compile(
-    r'''(?xs)
-        (?P<indent>\s*)                     # indent
-        (?P<marks>r?f?)                     # string type indicator
-        (?P<quote>(['"]){1}(?:\4{2})?)      # quote characters
-        (?P<content>.*?)                    # string contents
-        \3                                  # closing quote
+RGX_PYSTRING = re.compile(r'''
+    (?xs)
+    (?P<indent>\s*)                     # indent
+    (?P<marks>r?f?)                     # string type indicator
+    (?P<quote>(['"]){1}(?:\4{2})?)      # quote characters
+    (?P<content>.*?)                    # string contents
+    \3                                  # closing quote
     ''')
 # RGX_PRINTF_STR = re.compile(
 #     r'''(?x)
@@ -42,8 +40,7 @@ RGX_TRAILSPACE = re.compile(r'[ \t]+\n')
 
 def get_strings(lines, first=True):
     for line in lines:
-        match = RGX_PYSTRING.search(line)
-        if match:
+        if match := RGX_PYSTRING.search(line):
             yield line, match
             first = False
         elif not first:
@@ -77,7 +74,7 @@ class String:
 
         # strip trailing characters so we don't munging trailing content in the file
         raw = raw[:(match.end() - len(line))]
-        logger.info('Parsed string:\n\t%r', raw)
+        logger.info('Parsed string:\n\t{!r:}', raw)
 
         # Get indent for line from file. We have to make the first line break
         # earlier so we can use the result as a drop-in replacement
@@ -95,7 +92,7 @@ class String:
     # @property
     # def tripple(self):
 
-    def wrap(self, width=80, expandtabs=True):
+    def wrap(self, width=WIDTH, expandtabs=True):
         return wrap(self.unwrapped, width,
                     self.marks, self.quote,
                     self.indents[:2], expandtabs)
@@ -107,7 +104,7 @@ class String:
             write_replace(filename, {self.raw: new})
             logger.info('rewrapped!')
         else:
-            logger.info('No rewrap required')
+            logger.info('No rewrap required.')
 
 
 def _read_around(filename, line_nr, pre=10, post=10):
@@ -224,8 +221,7 @@ def strip_trailing_space(filename, _ignored=()):
         while True:
             pos = file.tell()
             line = file.readline()
-            mo = RGX_TRAILSPACE.search(line)
-            if mo:
+            if RGX_TRAILSPACE.search(line):
                 # remaining content to be rewriten
                 content = line + file.read()
 
