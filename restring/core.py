@@ -171,11 +171,9 @@ def _first_parsable_block(lines, join, initial=''):
         with contextlib.suppress(SyntaxError):
             ast.parse(txw.dedent(block))
             return block
-        except SyntaxError:
-            pass
 
 
-def wrap(string, width=80, marks='', quote="'", indents=('', ''),
+def wrap(string, width=WIDTH, marks='', quote="'", indents=('', ''),
          expandtabs=True):
 
     # add indent space for quotes
@@ -207,7 +205,7 @@ def wrap(string, width=80, marks='', quote="'", indents=('', ''),
     return '\n'.join(lines).lstrip()
 
 
-def rewrap(filename, line_nr, width=80, expandtabs=True):
+def rewrap(filename, line_nr, width=WIDTH, expandtabs=True):
     # rewrap python strings
     # block = get_code_block(filename, line_nr)
     matches = get_string_block(filename, line_nr)
@@ -253,7 +251,7 @@ def get_mod(tree):
     return v.mod
 
 
-def _convert_fstring(block, string=None, quote=None, width=80, expandtabs=True):
+def _convert_fstring(block, string=None, quote=None, width=WIDTH, expandtabs=True):
     if not isinstance(string, String):
         string = String.parse(block)
 
@@ -278,7 +276,7 @@ def _convert_fstring(block, string=None, quote=None, width=80, expandtabs=True):
     return original, new.wrap(width, expandtabs), changed
 
 
-def convert_fstring(filename, line_nr, quote=None, width=80, expandtabs=True):
+def convert_fstring(filename, line_nr, quote=None, width=WIDTH, expandtabs=True):
 
     i, j, block, strings = get_code_block(filename, line_nr)
     s = String.from_matches(zip(block[i:-j or None], strings))
