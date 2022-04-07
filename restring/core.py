@@ -5,6 +5,8 @@ import ast
 import textwrap as txw
 import logging
 
+# third-party
+from loguru import logger
 from flynt.transform.transform import transform_chunk as fstring_transform
 
 from recipes.io import iter_lines, write_replace, backed_up
@@ -12,10 +14,8 @@ from recipes.op import prepend, append
 from recipes.logging import get_module_logger
 # from recipes
 
-# module logger
-logger = get_module_logger()
-logging.basicConfig()
-logger.setLevel(logging.INFO)
+# ---------------------------------------------------------------------------- #
+WIDTH = 100
 
 
 RGX_PYSTRING = re.compile(
