@@ -2,6 +2,7 @@
 import itertools as itt
 import re
 import ast
+import contextlib
 import textwrap as txw
 import logging
 
@@ -155,12 +156,10 @@ def find_block(pre, lines, post, condition=always_true):
     npre, npost = len(pre), len(post)
     for i, j in sorted(itt.product(range(npre), range(npost)), key=sum):
         block = pre[(npre - i):] + lines + post[:j]
-        try:
+        with contextlib.suppress(SyntaxError):
             tree = ast.parse(txw.dedent(''.join(block)))
             if condition(tree):
                 return i, j, block
-        except SyntaxError:
-            pass
 
     raise ValueError('Could not get logical code block')
 
@@ -169,7 +168,7 @@ def _first_parsable_block(lines, join, initial=''):
     block = initial
     for line in lines:
         block = join(block, line)
-        try:
+        with contextlib.suppress(SyntaxError):
             ast.parse(txw.dedent(block))
             return block
         except SyntaxError:
