@@ -205,6 +205,7 @@ def wrap(string, width=WIDTH, marks='', quote="'", indents=('', ''),
 def rewrap(filename, line_nr, width=WIDTH, expandtabs=True):
     # rewrap python strings
     # block = get_code_block(filename, line_nr)
+    width = width or WIDTH
     matches = get_string_block(filename, line_nr)
     String.from_matches(matches).wrap_in_file(filename, width, expandtabs)
 
