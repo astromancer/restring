@@ -1,10 +1,10 @@
 
-# std libs
+# std
 import shutil
 import tempfile
 from pathlib import Path
 
-# local libs
+# local
 from recipes.testing import expected
 from restring.core import String, _convert_fstring, strip_trailing_space
 

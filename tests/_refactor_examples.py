@@ -1,5 +1,7 @@
 
 # pylint: disable-all
+# type: ignore
+
 
 if isinstance(other, TimeSeries):
     # Can only really do time series if they are simultaneous
@@ -19,7 +21,7 @@ if n > N_MAX_TS_SAFETY:
 # ---------------------------------------------------------------------------- #
 
 if (colours is not None) and (len(colours) < n):
-    logger.warning('Colour sequence has too few colours (%i < %i). Colours '
+    logger.warning('Colour sequence has too few colours ({:d} < {:d}). Colours '
                    'will repeat' % (len(colours), n))
 # ---------------------------------------------------------------------------- #
 
@@ -92,27 +94,3 @@ class X:
                 kind, Table(not_found, col_headers=att[0])
                 )
             
-# ---------------------------------------------------------------------------- #
-if True:
-    if len(set(ncols)) != 1:
-        raise ValueError(f'Cannot stack tables with unequal number of columns: {ncols}')
-    
-# ---------------------------------------------------------------------------- #
-class Trigger:
-    """
-    Class representing the trigger time and mechanism starting CCD exposure
-    """
-    
-    FLAG_INFO = {
-        'flag':
-            {'*': 'GPS Trigger',
-             INACCURATE_TIME_FLAG: 'GPSSTART missing - timestamp may be inaccurate'},
-        'loop_flag':
-            {'*': 'GPS Repeat'}
-    }
-    
-    
-# ---------------------------------------------------------------------------- #
-def foo():
-    if not callable(func):
-        raise TypeError(f'Parameter `func` should be callable. Received {type(func)}')
