@@ -1,7 +1,8 @@
 
 # pylint: disable-all
 # type: ignore
-
+# sourcery skip
+# ---------------------------------------------------------------------------- #
 
 if isinstance(other, TimeSeries):
     # Can only really do time series if they are simultaneous

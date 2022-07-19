@@ -1,17 +1,29 @@
 # pylint: disable=all
 # type: ignore
+# sourcery skip
+
+# ---------------------------------------------------------------------------- #
+
+('hello '  # comment
+ # more comment
+ 'world' # 'commented string'
+ # bla
+ '!'
+ )
 
 # ---------------------------------------------------------------------------- #
 if True:
     if len(set(ncols)) != 1:
         raise ValueError(f'Cannot stack tables with unequal number of columns: {ncols}')
-    
+
 # ---------------------------------------------------------------------------- #
+
+
 class Trigger:
     """
     Class representing the trigger time and mechanism starting CCD exposure
     """
-    
+
     FLAG_INFO = {
         'flag':
             {'*': 'GPS Trigger',
@@ -19,17 +31,17 @@ class Trigger:
         'loop_flag':
             {'*': 'GPS Repeat'}
     }
-    
-    
+
+
 # ---------------------------------------------------------------------------- #
 def foo():
     if not callable(func):
         raise TypeError(f'Parameter `func` should be callable. Received {type(func)}')
-    
-    
+
+
 # ---------------------------------------------------------------------------- #
 def __init__(self, a, b):
-    
+
     data = dict(a=a, b=b)
     for k, v in data.items():
         if isinstance(v, shocObsGroups):
@@ -37,13 +49,13 @@ def __init__(self, a, b):
         elif not isinstance(v, shocCampaign):
             raise ValueError(
                 f'Cannot match objects of type {type(a)} and {type(b)}. Please ensure you pass `shocCampaign` or `shocObsGroups` instances to this class.')
-    
+
     self.a, self.b = data.values()
     self.matches = {}
     self.deltas = {}
     #  dict of distance matrices between 'closest' attributes
-    
-    
+
+
 # ---------------------------------------------------------------------------- #
 def get_hash():
     if isinstance(val, abc.Hashable):
@@ -65,8 +77,8 @@ def get_hash():
         if not val.silent:
             # line below should get f' prefix
             warnings.warn('Ignoring argument in '
-                            f'{describe(self.func)}: {name!r} = {val!r}'
-                            )
+                          f'{describe(self.func)}: {name!r} = {val!r}'
+                          )
         continue
 
 
@@ -84,32 +96,19 @@ class foo:
                           'Return value for call will not be cached.',
                           CacheRejectionWarning)
 
+
 # ---------------------------------------------------------------------------- #
 if True:
     if len(set(ncols)) != 1:
         raise ValueError(f'Cannot stack tables with unequal number of columns: {ncols}')
-    
-# ---------------------------------------------------------------------------- #
-class Trigger:
-    """
-    Class representing the trigger time and mechanism starting CCD exposure
-    """
-    
-    FLAG_INFO = {
-        'flag':
-            {'*': 'GPS Trigger',
-             INACCURATE_TIME_FLAG: 'GPSSTART missing - timestamp may be inaccurate'},
-        'loop_flag':
-            {'*': 'GPS Repeat'}
-    }
-    
-    
+
+
 # ---------------------------------------------------------------------------- #
 def foo():
     if not callable(func):
         raise TypeError(f'Parameter `func` should be callable. Received {type(func)}')
-    
-    
+
+
 # ---------------------------------------------------------------------------- #
 class x:
     def y():
@@ -136,19 +135,34 @@ class x:
 )
 def test_ext_format(spec, s='Hello world!'):
     print(repr(formatter.format(spec, s)))
-    
-    
+
+
 # ---------------------------------------------------------------------------- #
 class x:
     def y(self):
         if module is self.module:
             logger.info('Import statements are already well sorted for \'{}\' style!',
                         sort)
-            
-            
+
+
 # ---------------------------------------------------------------------------- #
         if key != entry.key:
             logger.warning(
                 f'Adding entry to {self.__class__.__name__} with '
-                           f'keys that don\'t match. Ignoring {key!r} and using'
-                           f' {entry.key}')
+                f'keys that don\'t match. Ignoring {key!r} and using'
+                f' {entry.key}')
+
+
+# ---------------------------------------------------------------------------- #
+
+
+class _:
+    def _():
+        logger.opt(
+            lazy=True).info(
+            '{}',
+            lambda:
+            f'Found {len(data):d} {bands}-band SkyMapper DR1 images for coordinates {ra_dec_string(coords)} '
+            f'spanning dates {t.min().iso.split()[0]} to {t.max().iso.split()[0]}.',)
+
+    return columns, data
