@@ -114,9 +114,12 @@ def parse_string_blocks(text):
             if RGX_PYSTRING.match(post := match['post']):
                 faux = text[match.start():match.start('post')]
                 faux = faux.replace(match['quote'], '$') + post
-                another = RGX_PYSTRING.match(faux)
-                # if another:
-                #     logger.debug('')
+                if another := RGX_PYSTRING.match(faux):
+                    logger.info(
+                        'There are multiple independent strings in this line. '
+                        'Replacing quotes {!r} of the previous string (here in '
+                        "the match's 'pre' group) with '$'.", match['quote']
+                    )
 
             # Flush buffer if this match starts a new string
             yield buffer
@@ -234,21 +237,25 @@ class StringWrapper:
             # string
             offset = fp.tell()
 
-            # find the starting line of the current string
-            start = first_false_index(head[::-1], maybe_joined_str)
-
             # read next chunk
-            lines = read_lines(fp, max(line_nr - chunksize, 0))
+            lines = read_lines(fp, chunksize)
 
-        if start:
-            lines = head[-start:] + lines
+        match = RGX_PYSTRING.match(lines[0])
+        if not match:
+            raise ValueError(f'Could not find a string in {filename!r} at line '
+                             f'{line_nr}.')
+
+        if not has_code(match['pre']):
+            # find the starting line of the current string
+            if start := first_false_index(head[::-1], maybe_joined_str):
+                lines = head[-start:] + lines
 
         block = ''.join(lines)
         for wrapper in StringWrapper.parse(block, offset):
-            if any(map(op.contained(selection).within, wrapper.lines)):
-                return wrapper
+            # selection is used to disambiguate between multiple strings per line
+            return wrapper
 
-        raise ValueError(f'Could not find any string in {filename} near line '
+        raise ValueError(f'Could not find any string in {filename!r} near line '
                          f'{line_nr}.')
 
     # alias
@@ -296,14 +303,13 @@ def read_lines(fp, nlines):
     return [fp.readline() for _ in range(nlines)]
 
 
-def rewrap(filename, line_nr, width=DEFAULT_WIDTH, expandtabs=True, selection=''):
+def rewrap(filename, line_nr, width=DEFAULT_WIDTH, expandtabs=True):
     # hard wrap python strings in a file
-    # selection is used to disambiguate between multiple strings per line
     width = width or DEFAULT_WIDTH
     assert width > 0
 
     #
-    wrapper = StringWrapper.from_file(filename, line_nr, selection)
+    wrapper = StringWrapper.from_file(filename, line_nr)
     wrapper.wrap_in_file(filename, width, expandtabs)
     return wrapper
 
