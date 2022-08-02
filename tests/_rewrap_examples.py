@@ -2,6 +2,13 @@
 # type: ignore
 # sourcery skip
 
+
+# ---------------------------------------------------------------------------- #
+    def __str__(self):
+        sep = '\n|'
+        return f'<{self.__class__.__name__}: span=[{self.start}:{self.end}]>{sep}{sep.join(map(repr, self.lines))}'
+
+
 # ---------------------------------------------------------------------------- #
 
 ('hello '  # comment
@@ -165,4 +172,12 @@ class _:
             f'Found {len(data):d} {bands}-band SkyMapper DR1 images for coordinates {ra_dec_string(coords)} '
             f'spanning dates {t.min().iso.split()[0]} to {t.max().iso.split()[0]}.',)
 
-    return columns, data
+    # return columns, data
+
+
+# ---------------------------------------------------------------------------- #
+
+        self.logger.opt(lazy=True).debug(
+            '{}', lambda: f'{self.is_method = }, {name = }, {func.__qualname__ = }')
+        self.is_dispatch = all(hasattr(func, _) for _ in
+                               {'register', 'dispatch', 'registry'})
