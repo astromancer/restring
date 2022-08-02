@@ -46,10 +46,6 @@ get_comments = op.ItemVector('comment', default=None)
 
 # ---------------------------------------------------------------------------- #
 
-def always_true(_):
-    return True
-
-
 def is_comment(text):
     return RGX_LINE_COMMENT.match(text)
 
@@ -156,21 +152,6 @@ def _check_prev_post(text, prev):
 #     for matches in parse_string_blocks(text):
 #         yield _get_info_matches(matches)
 
-# def _read_around(filename, line_nr, pre=10, post=10):
-#     lines = list(iter_lines(filename,
-#                             max(line_nr - pre, 0),
-#                             line_nr + post + 1,
-#                             strip=''))
-#     split = min(pre, line_nr)
-#     return lines[:split], lines[split:]
-
-
-# def get_string_block(filename, line_nr, pre=10, post=10):
-#     # TODO: use linecache
-#     head, tail = _read_around(filename, line_nr, pre, post)
-#     start = first_false_index(head[::-1], RGX_PYSTRING.match, default=0)
-#     return ''.join(head[-start:] + tail)
-
 
 def wrap(lines, width=DEFAULT_WIDTH, marks='', quote="'", indents=('', ''),
          expand_tabs=True):
@@ -212,6 +193,46 @@ def wrap(lines, width=DEFAULT_WIDTH, marks='', quote="'", indents=('', ''),
 
     return lines
 
+
+# def wrap_fstring(string, width):
+
+#     indexers = [str.rindex, always(0)]
+
+#     lines = ['']
+#     for parts in braces.isplit_pairs(string, ):
+#         pos = len(lines[-1])
+#         # unbraced part / braced part
+#         for part, indexer in zip(parts, indexers):
+#             if pos + len(part) > width:
+#                 idx = indexer(part)
+#                 lines[-1] += part[:idx]
+#                 lines.append(part[idx:])
+#             else:
+#                 lines[-1] += part
+
+#     return lines
+
+
+# def _wrap_ex(string, width):
+#     lines = ['']
+#     for pre, braced in braces.isplit_pairs(string):
+#         pos = len(lines[-1])
+#         if pos + len(pre) > width:
+#             idx = pre.rindex(' ')
+#             lines[-1] += pre[:idx]
+#             lines.append(pre[idx:])
+#         else:
+#             lines[-1] += pre
+
+#         pos = len(lines[-1])
+#         if pos + len(braced) > width - 1:
+#             lines.append(braced)
+#         else:
+#             lines[-1] += braced
+
+#         # if braced and not lines[-1].startswith('f')
+
+#     return lines
 
 
 def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
@@ -267,11 +288,20 @@ def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
 def maybe_joined_str(line):
     return (match := RGX_PYSTRING.match(line)) and not has_code(match['post'])
 
+
+# def int2tup(v):
+#     """wrap integer in a tuple"""
+#     return (v, ) if isinstance(v, numbers.Integral) else tuple(v)
+
 # class MetaString(type):
-#     def __matmul__(cls, fileinfo):
+#     def __matmul__(self, fileinfo):
+#         assert isinstance(fileinfo, MutableMapping)
+#         for filename, line_nrs in fileinfo.items():
+#             for line_nr in int2tup(line_nrs):
+#                 yield self.fromfile(filename, line_nr)
 
 
-class StringWrapper:
+class StringWrapper:  # (metaclass=MetaString)
 
     @classmethod
     def parse(cls, text, offset=0):
@@ -373,6 +403,45 @@ class StringWrapper:
     def is_raw(self):
         return ('r' in self.first['marks'].lower())
 
+    # def _gen_split_points(self):
+    #     for line in self:
+
+    # def get_split_points(self, line, width):
+    #     idx = current.rfind(' ', 0, width - len(opening))
+    #     if idx != -1:
+    #         yield line[:idx]
+    #         opening = self.opening + line[idx:]
+    #     else:
+    #         '?'
+
+    # def _wrap_fstring(self):
+
+    # def iwrap(self, width, expand_tabs):
+    #     # split_points = []
+    #     # if self.is_fstring():
+    #     # r = 'r' * self.is_raw()
+
+    #     expander = str.expandtabs if expand_tabs else echo0
+
+    #     opening = self.opening
+    #     leftover = ''
+    #     lines = map(expander, self.lines)
+    #     while (line := next(lines, None)) is not None:
+    #         current = opening + leftover + line
+    #         if (w := len(current)) < width:
+    #             continue
+
+    #         idx = current.rfind(' ', 0, width - len(opening))
+    #         if idx != -1:
+    #             yield line[:idx]
+    #             opening = self.opening + line[idx:]
+    #         else:
+    #             '?'
+    #         # else:
+    #         #     leftover = line
+
+    #     yield leftover
+
     def wrap(self, width=DEFAULT_WIDTH, expand_tabs=True):
 
         lines = self.lines
@@ -435,30 +504,6 @@ def rewrap(filename, line_nr, width=DEFAULT_WIDTH, expand_tabs=True):
 # ---------------------------------------------------------------------------- #
 
 
-def strip_trailing_space(filename, _ignored=()):
-    """
-    Strip trailing whitespace from file.
-
-    This implementation only rewrites the file if necessary and only rewrites
-    the portion of the file that is necessary, so is somewhat optimized
-    compared to blind replace and rewrite.
-    """
-    with open(filename, 'r+') as file:
-        while True:
-            pos = file.tell()
-            line = file.readline()
-            if RGX_TRAILSPACE.search(line):
-                # remaining content to be rewriten
-                content = line + file.read()
-
-                file.seek(pos)
-                file.write(RGX_TRAILSPACE.sub('\n', content))
-                file.truncate()
-                break
-
-# ---------------------------------------------------------------------------- #
-
-
 # def get_code_block(filename, line_nr, pre=10, post=10, condition=always_true):
 
 #     # n = count_lines(filename)
@@ -500,57 +545,3 @@ def strip_trailing_space(filename, _ignored=()):
 #         with contextlib.suppress(SyntaxError):
 #             ast.parse(txw.dedent(block))
 #             return block
-
-
-class GetMod(ast.NodeVisitor):
-    def __init__(self):
-        super().__init__()
-        self.mod = None
-
-    def visit_BinOp(self, node):
-        if isinstance(node.op, ast.Mod):
-            self.mod = node
-
-
-def get_mod(tree):
-    v = GetMod()
-    v.visit(tree)
-    return v.mod
-
-
-def _convert_fstring(block, string=None, quote=None, width=DEFAULT_WIDTH, expandtabs=True):
-    if not isinstance(string, StringWrapper):
-        string = StringWrapper.parse(block)
-
-    # get mod part
-    block = txw.dedent(block)
-    tree = ast.parse(block)
-    mod = get_mod(tree)
-    # if v.rhs is None:
-    #     raise ValueError('not found')
-    original = ast.get_source_segment(block, mod)  # python >=3.8
-    modstring = ast.get_source_segment(block, mod.right)
-
-    # return f'{string.unwrapped!r} % {modstring}'
-
-    quote = quote or string.quote
-    # FIXME: this function is frekkin useless!
-    new, changed = fstring_transform(
-        f'{string.unwrapped!r} % {modstring}', quote)
-    new = StringWrapper.parse(new)
-    new.indents = string.indents
-
-    return original, new.wrap(width, expandtabs), changed
-
-
-def convert_fstring(filename, line_nr, quote=None, width=DEFAULT_WIDTH, expandtabs=True):
-
-    i, j, block, strings = get_code_block(filename, line_nr)
-    s = StringWrapper.from_matches(zip(block[i:-j or None], strings))
-
-    block = ''.join(block)
-    origin, new, changed = _convert_fstring(block, s, quote, width, expandtabs)
-    if changed:
-        write_replace(filename, {origin: new})
-    else:
-        logger.info('String not converted.')
