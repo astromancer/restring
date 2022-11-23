@@ -46,12 +46,13 @@ get_comments = op.ItemVector('comment', default=None)
 
 # ---------------------------------------------------------------------------- #
 
+
 def is_comment(text):
     return RGX_LINE_COMMENT.match(text)
 
 
-def has_code(text):
-    return text and not is_comment(text)
+def is_code(text):
+    return text and not text.isspace() and not is_comment(text)
 
 
 def parse_string_blocks(text):
@@ -77,6 +78,8 @@ def parse_string_blocks(text):
     if not text:
         return
 
+    logger.debug('Received text:\n{}', text)
+
     buffer = []
     prev = None
     matched = RGX_PYSTRING.finditer(text)
@@ -96,7 +99,7 @@ def parse_string_blocks(text):
         #   => closes the previous (joined) string
         # logger.opt(lazy=True).debug('{}', lambda: f'{buffer = };')
         if prev and \
-            any(map(has_code,
+            any(map(is_code,
                     text[prev.start('post'):match.start('marks')].splitlines())):
             # Flush buffer if this match starts a new string
             logger.debug('Found string with {} lines:\n> {}', len(buffer), buffer)
@@ -236,7 +239,7 @@ def wrap(lines, width=DEFAULT_WIDTH, marks='', quote="'", indents=('', ''),
 
 
 def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
-                 split_at=tuple(' .,:;')):
+                 split_at=tuple(' .,:;\n{}')):
 
     # user can use marks='F' / 'R' / 'rf' etc, for different styling, but 'f'
     # will be used by default where necessary
@@ -258,24 +261,23 @@ def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
         width -= 1  # for closing quote
 
     for pre, braced in braces.isplit_pairs(string, condition=(level == 0)):
-        pos = len(lines[-1])
-        if pos + len(pre) > width:
-            idx = pre.rindex(' ')
+        while (pos := len(lines[-1])) + len(pre) > width:
+            idx = pre.rindex(' ', 0, width - pos)
             lines[-1] += pre[:idx] + ending
-            lines.append(_open + pre[idx:])
-        else:
-            lines[-1] += pre
-
+            lines.append(_open)
+            pre = pre[idx:]
+        lines[-1] += pre
+        
         pos = len(lines[-1])
         if pos + len(braced) > width - 1:  # -1 for f prefix
             idx = 0
             lines[-1] += braced[:idx] + ending
             lines.append(fopen + braced[idx:])
         else:
+            current = lines[-1]
+            if not current.startswith(fopen):
+                lines[-1] = fopen + current[len(_open):]
             lines[-1] += braced
-
-        # print(lines)
-        # print('*' * width)
 
     if lines:
         lines[0] = lines[0].lstrip()
@@ -286,14 +288,19 @@ def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
 
 
 def maybe_joined_str(line):
-    return (match := RGX_PYSTRING.match(line)) and not has_code(match['post'])
+    return (match := RGX_PYSTRING.match(line)) and not is_code(match['post'])
 
 
 # def int2tup(v):
 #     """wrap integer in a tuple"""
 #     return (v, ) if isinstance(v, numbers.Integral) else tuple(v)
 
-# class MetaString(type):
+# class StringParserMeta(type):
+#     """
+#     metaclass enabling this syntax
+#     >>> String @ {file.txt : 111}
+#     String("'string at line 111 in file.txt'")
+#     """
 #     def __matmul__(self, fileinfo):
 #         assert isinstance(fileinfo, MutableMapping)
 #         for filename, line_nrs in fileinfo.items():
@@ -301,7 +308,7 @@ def maybe_joined_str(line):
 #                 yield self.fromfile(filename, line_nr)
 
 
-class StringWrapper:  # (metaclass=MetaString)
+class StringWrapper:  # (metaclass=StringParserMeta)
 
     @classmethod
     def parse(cls, text, offset=0):
@@ -310,7 +317,7 @@ class StringWrapper:  # (metaclass=MetaString)
 
     @classmethod
     def from_file(cls, filename, line_nr, chunksize=10, width=DEFAULT_WIDTH):
-        # not line numbers are 1 indexed
+        # NOTE line numbers are 1 indexed
         file = Path(filename)
         assert file.exists()
 
@@ -333,20 +340,22 @@ class StringWrapper:  # (metaclass=MetaString)
             raise ValueError(f'Could not find a string in {filename!r} at line '
                              f'{line_nr}.')
 
-        if not has_code(match['pre']):
+        if not is_code(match['pre']):
             # find the starting line of the current string
             if start := first_false_index(head[::-1], maybe_joined_str):
-                lines = head[-start:] + lines
+                prepend = head[-start:]
+                lines = prepend + lines
+                offset -= sum(map(len, prepend))
 
         block = ''.join(lines)
         for wrapper in cls.parse(block, offset):
             # disambiguate between multiple strings per line
             if (len(wrapper._matches) == 1) and wrapper.last.start('post') < width:
-                #RGX_PYSTRING.match(wrapper.last['post']
+                # RGX_PYSTRING.match(wrapper.last['post']
                 logger.debug("Going to next string since this one doesn't need "
                              "wrap.")
                 continue
-            
+
             return wrapper
 
         raise ValueError(f'Could not find any string in {filename!r} near line '
@@ -450,13 +459,15 @@ class StringWrapper:  # (metaclass=MetaString)
 
         first = self.first
         if self.is_fstring():
-            logger.debug('Hard wrapping fstring:\n  {}', 
-                         '\n  '.join(map(repr, self.lines)))
+            logger.opt(lazy=True).debug('Hard wrapping fstring:\n  {}',
+                                        lambda: '\n  '.join(map(repr, self.lines)))
+            logger.debug('Indents: {}', self.indents)
             return wrap_fstring(''.join(lines), width,
                                 first['marks'], first['quote'],
                                 self.indents)
 
-        logger.debug('Hard wrapping:\n  {}', '\n  '.join(map(repr, self.lines)))
+        logger.opt(lazy=True).debug('Hard wrapping:\n  {}',
+                                    lambda: '\n  '.join(map(repr, self.lines)))
         return wrap(self.lines, width,
                     first['marks'], first['quote'],
                     self.indents, expand_tabs)
@@ -469,6 +480,8 @@ class StringWrapper:  # (metaclass=MetaString)
         assert file.exists()
 
         new = self.wrap(width, expand_tabs)
+        logger.debug('The wrapped string is: \n {}',
+                     '\n  '.join(map(repr, new)))
 
         # changed
         if (new != self.lines):
@@ -477,10 +490,10 @@ class StringWrapper:  # (metaclass=MetaString)
                 tail = fp.read()
                 fp.seek(self.start)
                 fp.write('\n'.join(new))
-                if len(new) != len(self.lines):
-                    # only needed if new different number of lines to old
-                    fp.write(tail)
-                    fp.truncate()
+                # if len(new) != len(self.lines):
+                #     # only needed if new different number of lines to old
+                fp.write(tail)
+                fp.truncate()
         else:
             logger.info('No wrap required.')
 
@@ -497,7 +510,7 @@ def rewrap(filename, line_nr, width=DEFAULT_WIDTH, expand_tabs=True):
     assert width > 0
 
     #
-    wrapper = StringWrapper.from_file(filename, line_nr, width)
+    wrapper = StringWrapper.from_file(filename, line_nr, width=width)
     wrapper.wrap_in_file(filename, width, expand_tabs)
     return wrapper
 
