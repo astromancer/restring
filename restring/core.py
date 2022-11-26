@@ -239,7 +239,7 @@ def wrap(lines, width=DEFAULT_WIDTH, marks='', quote="'", indents=('', ''),
 
 
 def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
-                 split_at=tuple(' .,:;\n{}')):
+                 split_before=tuple(' '), split_after=tuple('.,:;\n')):
 
     # user can use marks='F' / 'R' / 'rf' etc, for different styling, but 'f'
     # will be used by default where necessary
@@ -262,7 +262,7 @@ def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
 
     for pre, braced in braces.isplit_pairs(string, condition=(level == 0)):
         while (pos := len(lines[-1])) + len(pre) > width:
-            idx = pre.rindex(' ', 0, width - pos)
+            idx = pre.rindex(split_before, 0, width - pos) - 1
             lines[-1] += pre[:idx] + ending
             lines.append(_open)
             pre = pre[idx:]
