@@ -70,7 +70,7 @@ def parse_string_blocks(text):
     >>> 
 
     Yields
-    -------
+    ------
     list
         The line buffer. These lines are interpreted as a single (implicitly
         joined) string by python.
@@ -239,7 +239,7 @@ def wrap(lines, width=DEFAULT_WIDTH, marks='', quote="'", indents=('', ''),
 
 
 def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
-                 split_before=tuple(' '), split_after=tuple('.,:;\n')):
+                 split_after=tuple(' .,:;\n')):
 
     # user can use marks='F' / 'R' / 'rf' etc, for different styling, but 'f'
     # will be used by default where necessary
@@ -262,12 +262,13 @@ def wrap_fstring(string, width, marks='f', quote="'", indents=('', ''),
 
     for pre, braced in braces.isplit_pairs(string, condition=(level == 0)):
         while (pos := len(lines[-1])) + len(pre) > width:
-            idx = pre.rindex(split_before, 0, width - pos) - 1
+            idx = pre.rindex(split_after[0], 0, width - pos) + 1
             lines[-1] += pre[:idx] + ending
             lines.append(_open)
             pre = pre[idx:]
+
+        # add line
         lines[-1] += pre
-        
         pos = len(lines[-1])
         if pos + len(braced) > width - 1:  # -1 for f prefix
             idx = 0
@@ -486,16 +487,19 @@ class StringWrapper:  # (metaclass=StringParserMeta)
         # changed
         if (new != self.lines):
             with backed_up(filename, 'r+') as fp:
-                fp.seek(self.end)
-                tail = fp.read()
-                fp.seek(self.start)
-                fp.write('\n'.join(new))
-                # if len(new) != len(self.lines):
-                #     # only needed if new different number of lines to old
-                fp.write(tail)
-                fp.truncate()
+                self._write(fp, new)
         else:
             logger.info('No wrap required.')
+
+    def _write(self, fp, lines):
+        fp.seek(self.end)
+        tail = fp.read()
+        fp.seek(self.start)
+        fp.write('\n'.join(lines))
+        # if len(new) != len(self.lines):
+        #     # only needed if new different number of lines to old
+        fp.write(tail)
+        fp.truncate()
 
 
 def read_lines(fp, nlines):
