@@ -12,7 +12,7 @@ from loguru import logger
 from recipes import op
 from recipes.io import backed_up
 from recipes.iter import first_false_index
-from recipes.string.brackets import braces, level
+from recipes.string.delimited import braces, level
 
 
 # FIXME: wrap brackets when needed at return '...'

@@ -181,3 +181,34 @@ class _:
             '{}', lambda: f'{self.is_method = }, {name = }, {func.__qualname__ = }')
         self.is_dispatch = all(hasattr(func, _) for _ in
                                {'register', 'dispatch', 'registry'})
+        
+        
+        
+# ---------------------------------------------------------------------------- #
+
+        raise ValueError(
+                f'Fits headers indicate multiple targets: {targets}. Only '
+                 'single target campaigns are currently supported by this datareduction '
+                 'pipeline. You can provide the target name eg: --target HU '
+                 'Aqr.'
+            )
+
+
+# ---------------------------------------------------------------------------- #
+@click.option('-w', '--overwrite', default=False,
+              help='Overwite pre-existing data products. Default is False => '
+              "Don't re-compute anything unless explicitly asked to. This "
+              'is safer and can save time on multiple re-runs of the '
+              'pipeline for the same data, but with a different kind of '
+              'aperture, etc.')
+#
+
+# ---------------------------------------------------------------------------- #
+        if not isinstance(hdu, ImageSamplerMixin):
+            raise TypeError(
+                f'Received object {hdu} of type: {type(hdu)}. '
+                'Can only initialize from HDUs that inherit from '
+                f'`{qualname(ImageSamplerMixin)}`. Alternatively use the '
+                '`from_image` constructor, which runs source detection '
+                'on an image array.'
+            )
